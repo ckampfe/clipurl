@@ -1,0 +1,17 @@
+[package]
+name = "clipurl"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1"
+copypasta = { git = "https://github.com/alacritty/copypasta", rev = "5a4c6dc"}
+structopt = "0.3"
+tokio = { version = "1", features = ["full"] }
+url = "2.2"
+
+[profile.release]
+codegen-units = 1
+lto = true
