@@ -7,7 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-copypasta = { git = "https://github.com/alacritty/copypasta", rev = "5a4c6dc"}
+copypasta = { git = "https://github.com/alacritty/copypasta", rev = "5a4c6dc" }
+rusqlite = { version = "0.26", features = ["bundled"] }
 structopt = "0.3"
 tokio = { version = "1", features = ["full"] }
 url = "2.2"

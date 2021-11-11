@@ -1,13 +1,13 @@
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use copypasta::ClipboardProvider;
+use rusqlite::params;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use tokio::io::AsyncWriteExt;
 
 #[derive(Clone, Debug, StructOpt)]
 struct Options {
     #[structopt(short, long)]
-    log_file: PathBuf,
+    links_db_file: PathBuf,
 
     #[structopt(short, long, default_value = "5000")]
     poll_interval_milliseconds: u64,
@@ -17,11 +17,10 @@ struct Options {
 async fn main() -> Result<()> {
     let options = Options::from_args();
 
-    let mut file = tokio::fs::OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(options.log_file)
-        .await?;
+    let conn = rusqlite::Connection::open(&options.links_db_file)
+        .context("Could not open link database file")?;
+
+    initialize_db(&conn).await?;
 
     let mut ctx =
         copypasta::ClipboardContext::new().map_err(|_e| anyhow!("Could not set up clipboard"))?;
@@ -47,9 +46,7 @@ async fn main() -> Result<()> {
 
                 match url::Url::parse(&previous_clipboard_contents) {
                     Ok(url) => {
-                        let mut out_string = url.to_string();
-                        out_string.push('\n');
-                        file.write_all(out_string.as_bytes()).await?
+                        write_link_to_db(&conn, url).await.context("Could not write link to database")?;
                     }
                     Err(_e) => {
                         continue
@@ -63,4 +60,37 @@ async fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+async fn initialize_db(conn: &rusqlite::Connection) -> Result<()> {
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS links (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        link TEXT,
+        inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )",
+        [],
+    )
+    .context("Could not create table 'links'")?;
+
+    conn.execute("CREATE INDEX IF NOT EXISTS link_index ON links (link)", [])
+        .context("Could not create link index on table 'links'")?;
+
+    Ok(())
+}
+
+async fn write_link_to_db(
+    conn: &rusqlite::Connection,
+    link: url::Url,
+) -> Result<usize, rusqlite::Error> {
+    let link_id = conn.query_row::<usize, _, _>(
+        "INSERT INTO links (link)
+        VALUES (?1)
+        RETURNING id",
+        params![link.to_string()],
+        |r| r.get(0),
+    )?;
+
+    Ok(link_id)
 }
