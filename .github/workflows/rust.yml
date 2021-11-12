@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: System dependencies
-      run: sudo apt update && sudo apt install xcb-shape xcb-xfixes
+      run: sudo apt update && sudo apt install libxcb-shape0-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
