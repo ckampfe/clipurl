@@ -2,10 +2,9 @@
 
 [![Rust](https://github.com/ckampfe/clipurl/actions/workflows/rust.yml/badge.svg)](https://github.com/ckampfe/clipurl/actions/workflows/rust.yml)
 
-Clipurl polls your system clipboard/pasteboard,
-checks if its contents parse as a URL (according to [this library](https://crates.io/crates/url)), and if so, adds that URL Sqlite database of your choice.
+The intent of Clipurl is to give you a history of the URLs you share.
 
-The intent being to give you a history of the URLs you share.
+Clipurl polls your system clipboard/pasteboard, checks if its contents parse as a URL (according to [this library](https://crates.io/crates/url)), and if so, adds that URL to a SQLite database of your choice.
 
 Inspired by [this](https://lobste.rs/s/b6oms9/this_project_will_only_take_2_hours).
 
