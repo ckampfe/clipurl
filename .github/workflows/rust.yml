@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: System dependencies
+      run: apt update && apt install xcb-shape xcb-xfixes
     - name: Build
       run: cargo build --verbose
     - name: Run tests
