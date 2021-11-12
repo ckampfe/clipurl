@@ -1,5 +1,7 @@
 # clipurl
 
+[![Rust](https://github.com/ckampfe/clipurl/actions/workflows/rust.yml/badge.svg)](https://github.com/ckampfe/clipurl/actions/workflows/rust.yml)
+
 Clipurl polls your system clipboard/pasteboard,
 checks if its contents parse as a URL (according to [this library](https://crates.io/crates/url)), and if so, adds that URL Sqlite database of your choice.
 
