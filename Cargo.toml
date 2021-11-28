@@ -11,6 +11,8 @@ copypasta = { git = "https://github.com/alacritty/copypasta", rev = "5a4c6dc" }
 rusqlite = { version = "0.26", features = ["bundled"] }
 structopt = "0.3"
 tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 url = "2.2"
 
 [profile.release]

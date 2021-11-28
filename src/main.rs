@@ -3,6 +3,9 @@ use copypasta::ClipboardProvider;
 use rusqlite::params;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use tracing::{debug, info};
+
+const MACOS_PASTEBOARD_NULL_ERROR: &str = "pasteboard#stringForType returned null";
 
 #[derive(Clone, Debug, StructOpt)]
 struct Options {
@@ -15,28 +18,64 @@ struct Options {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
+
+    info!("started, logging initialized");
+
     let options = Options::from_args();
+
+    info!("got options: {:?}", &options);
 
     let conn = rusqlite::Connection::open(&options.links_db_file)
         .context("Could not open link database file")?;
 
+    info!("Connected to database: {:?}", &options.links_db_file);
+
     initialize_db(&conn).await?;
 
-    let mut ctx =
+    info!("Initialized database: {:?}", &options.links_db_file);
+
+    let mut clipboard =
         copypasta::ClipboardContext::new().map_err(|_e| anyhow!("Could not set up clipboard"))?;
+
+    info!("Initialized clipboard context");
 
     let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(
         options.poll_interval_milliseconds,
     ));
 
+    info!("Set clipboard poll interval: {:?}", interval);
+
+    enter_pool_loop(&mut clipboard, &conn, &mut interval).await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(err, skip_all)]
+async fn enter_pool_loop(
+    clipboard: &mut copypasta::ClipboardContext,
+    conn: &rusqlite::Connection,
+    interval: &mut tokio::time::Interval,
+) -> Result<()> {
     let mut previous_clipboard_contents = String::new();
 
     loop {
         tokio::select! {
             _ = interval.tick() => {
-                let clipboard_contents = ctx
+                let clipboard_contents = clipboard
                     .get_contents()
-                    .map_err(|_e| anyhow!("Could not get clipboard contents"))?;
+                    .map_err(|e| anyhow!(e));
+
+                let clipboard_contents = match clipboard_contents {
+                    Ok(s) => s,
+                    Err(e) if e.to_string() == MACOS_PASTEBOARD_NULL_ERROR => {
+                        debug!("This is the error Macos raises when the pasteboard is empty: {}", e.to_string());
+                        continue;
+                    },
+                    Err(e) => {
+                        return Err(e).context("Error when attempting to get clipboard contents")
+                    }
+                };
 
                 if clipboard_contents == previous_clipboard_contents {
                     continue;
@@ -46,7 +85,7 @@ async fn main() -> Result<()> {
 
                 match url::Url::parse(&previous_clipboard_contents) {
                     Ok(url) => {
-                        write_link_to_db(&conn, url).await.context("Could not write link to database")?;
+                        write_link_to_db(conn, url).await.context("Could not write link to database")?;
                     }
                     Err(_e) => {
                         continue
@@ -54,6 +93,7 @@ async fn main() -> Result<()> {
                 }
             }
             _ = tokio::signal::ctrl_c() => {
+                info!("Received SIGINT, shutting down");
                 break
             }
         }
@@ -62,6 +102,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument]
 async fn initialize_db(conn: &rusqlite::Connection) -> Result<()> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS links (
@@ -80,6 +121,7 @@ async fn initialize_db(conn: &rusqlite::Connection) -> Result<()> {
     Ok(())
 }
 
+#[tracing::instrument]
 async fn write_link_to_db(
     conn: &rusqlite::Connection,
     link: url::Url,
