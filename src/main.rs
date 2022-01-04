@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::{debug, info};
 
+#[cfg(target_os = "macos")]
 const MACOS_PASTEBOARD_NULL_ERROR: &str = "pasteboard#stringForType returned null";
 
 #[derive(Clone, Debug, StructOpt)]
@@ -68,6 +69,7 @@ async fn enter_pool_loop(
 
                 let clipboard_contents = match clipboard_contents {
                     Ok(s) => s,
+                    #[cfg(target_os = "macos")]
                     Err(e) if e.to_string() == MACOS_PASTEBOARD_NULL_ERROR => {
                         debug!("This is the error Macos raises when the pasteboard is empty: {}", e.to_string());
                         continue;
