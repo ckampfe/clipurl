@@ -1,19 +1,20 @@
 use anyhow::{anyhow, Context, Result};
+use clap::Parser;
 use copypasta::ClipboardProvider;
 use rusqlite::params;
 use std::path::PathBuf;
-use structopt::StructOpt;
 use tracing::{debug, info};
 
 #[cfg(target_os = "macos")]
 const MACOS_PASTEBOARD_NULL_ERROR: &str = "pasteboard#stringForType returned null";
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Parser)]
+#[clap(author, version, about, name = "clipurl")]
 struct Options {
-    #[structopt(short, long)]
+    #[clap(short, long)]
     links_db_file: PathBuf,
 
-    #[structopt(short, long, default_value = "5000")]
+    #[clap(short, long, default_value = "5000")]
     poll_interval_milliseconds: u64,
 }
 
@@ -23,7 +24,7 @@ async fn main() -> Result<()> {
 
     info!("started, logging initialized");
 
-    let options = Options::from_args();
+    let options = Options::parse();
 
     info!("got options: {:?}", &options);
 
