@@ -28,12 +28,12 @@ async fn main() -> Result<()> {
 
     info!("got options: {:?}", &options);
 
-    let conn = rusqlite::Connection::open(&options.links_db_file)
+    let mut conn = rusqlite::Connection::open(&options.links_db_file)
         .context("Could not open link database file")?;
 
     info!("Connected to database: {:?}", &options.links_db_file);
 
-    initialize_db(&conn).await?;
+    initialize_db(&mut conn).await?;
 
     info!("Initialized database: {:?}", &options.links_db_file);
 
@@ -48,13 +48,13 @@ async fn main() -> Result<()> {
 
     info!("Set clipboard poll interval: {:?}", interval);
 
-    enter_pool_loop(&mut clipboard, &conn, &mut interval).await?;
+    enter_poll_loop(&mut clipboard, &conn, &mut interval).await?;
 
     Ok(())
 }
 
 #[tracing::instrument(err, skip_all)]
-async fn enter_pool_loop(
+async fn enter_poll_loop(
     clipboard: &mut copypasta::ClipboardContext,
     conn: &rusqlite::Connection,
     interval: &mut tokio::time::Interval,
@@ -106,8 +106,10 @@ async fn enter_pool_loop(
 }
 
 #[tracing::instrument]
-async fn initialize_db(conn: &rusqlite::Connection) -> Result<()> {
-    conn.execute(
+async fn initialize_db(conn: &mut rusqlite::Connection) -> Result<()> {
+    let tx = conn.transaction()?;
+
+    tx.execute(
         "CREATE TABLE IF NOT EXISTS links (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         link TEXT,
@@ -118,8 +120,10 @@ async fn initialize_db(conn: &rusqlite::Connection) -> Result<()> {
     )
     .context("Could not create table 'links'")?;
 
-    conn.execute("CREATE INDEX IF NOT EXISTS link_index ON links (link)", [])
+    tx.execute("CREATE INDEX IF NOT EXISTS link_index ON links (link)", [])
         .context("Could not create link index on table 'links'")?;
+
+    tx.commit()?;
 
     Ok(())
 }
