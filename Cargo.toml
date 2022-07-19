@@ -9,7 +9,7 @@ edition = "2021"
 anyhow = "1"
 clap = { version = "3", default-features = false, features = ["derive", "std"] }
 copypasta = "0.8"
-rusqlite = { version = "0.28", features = ["bundled"] }
+rusqlite = { version = "0.28" }
 tokio = { version = "1", features = ["macros", "rt", "signal", "time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
