@@ -1,12 +1,14 @@
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use copypasta::ClipboardProvider;
-use rusqlite::params;
 use std::path::PathBuf;
 use tracing::{debug, info};
 
 #[cfg(target_os = "macos")]
 const MACOS_PASTEBOARD_NULL_ERROR: &str = "pasteboard#stringForType returned null";
+#[cfg(target_os = "macos")]
+const MACOS_PASTEBOARD_NON_STRING_ERROR: &str =
+    "NSPasteboard#types doesn't contain NSPasteboardTypeString";
 
 #[derive(Clone, Debug, Parser)]
 #[clap(author, version, about, name = "clipurl")]
@@ -65,26 +67,30 @@ async fn enter_poll_loop(
         tokio::select! {
             _ = interval.tick() => {
                 let clipboard_contents = clipboard
-                    .get_contents()
-                    .map_err(|e| anyhow!(e));
+                    .get_contents();
 
                 let clipboard_contents = match clipboard_contents {
                     Ok(s) => s,
                     #[cfg(target_os = "macos")]
                     Err(e) if e.to_string() == MACOS_PASTEBOARD_NULL_ERROR => {
-                        debug!("This is the error Macos raises when the pasteboard is empty: {}", e.to_string());
+                        debug!("This is the error the copypasta library raises when the pasteboard is empty: {}", e.to_string());
                         continue;
                     },
+                    #[cfg(target_os = "macos")]
+                    Err(e) if e.to_string() == MACOS_PASTEBOARD_NON_STRING_ERROR => {
+                        debug!("This is the error the copypasta library raises when the pasteboard contains content that is not a string (e.g., an image): {}", e.to_string());
+                        continue;
+                    }
                     Err(e) => {
-                        return Err(e).context("Error when attempting to get clipboard contents")
+                        return Err(anyhow!(e)).context("Error when attempting to get clipboard contents")
                     }
                 };
 
                 if clipboard_contents == previous_clipboard_contents {
                     continue;
-                } else {
-                    previous_clipboard_contents = clipboard_contents;
                 }
+
+                previous_clipboard_contents = clipboard_contents;
 
                 match url::Url::parse(&previous_clipboard_contents) {
                     Ok(url) => {
@@ -137,7 +143,7 @@ async fn write_link_to_db(
         "INSERT INTO links (link)
         VALUES (?1)
         RETURNING id",
-        params![link.to_string()],
+        [link.as_ref()],
         |r| r.get(0),
     )?;
 
