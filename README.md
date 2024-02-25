@@ -42,6 +42,6 @@ OPTIONS:
     -p, --poll-interval-milliseconds <poll-interval-milliseconds>     [default: 5000]
 ```
 
-## Sqlite
+## SQLite
 
-`clipurl` bundles its own copy of Sqlite. This might change in the future.
+`clipurl` use your system SQLite. This can be changed in the `Cargo.toml` by adding the `bundled` feature to the `rusqlite` dependency.
