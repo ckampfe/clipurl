@@ -7,13 +7,13 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-clap = { version = "3", default-features = false, features = ["derive", "std"] }
-copypasta = "0.8"
-rusqlite = { version = "0.28" }
+clap = { version = "4", default-features = false, features = ["derive", "std"] }
+copypasta = "0.10"
+rusqlite = { version = "0.31" }
 tokio = { version = "1", features = ["macros", "rt", "signal", "time"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-url = "2.2"
+url = "2.5"
 
 [profile.release]
 codegen-units = 1
