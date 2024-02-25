@@ -2,6 +2,9 @@ use anyhow::{anyhow, Context, Result};
 use clap::Parser;
 use copypasta::ClipboardProvider;
 use std::path::PathBuf;
+#[cfg(not(target_os = "macos"))]
+use tracing::info;
+#[cfg(target_os = "macos")]
 use tracing::{debug, info};
 
 #[cfg(target_os = "macos")]
