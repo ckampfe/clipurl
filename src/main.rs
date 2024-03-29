@@ -8,7 +8,7 @@ use tracing::info;
 use tracing::{debug, info};
 
 #[cfg(target_os = "macos")]
-const MACOS_PASTEBOARD_NULL_ERROR: &str = "pasteboard#stringForType returned null";
+const MACOS_PASTEBOARD_NULL_ERROR: &str = "NSPasteboard#stringForType returned null";
 #[cfg(target_os = "macos")]
 const MACOS_PASTEBOARD_NON_STRING_ERROR: &str =
     "NSPasteboard#types doesn't contain NSPasteboardTypeString";
@@ -47,7 +47,7 @@ async fn main() -> Result<()> {
 
     info!("Initialized clipboard context");
 
-    let mut interval = tokio::time::interval(tokio::time::Duration::from_millis(
+    let mut interval = tokio::time::interval(std::time::Duration::from_millis(
         options.poll_interval_milliseconds,
     ));
 
