@@ -38,7 +38,7 @@ async fn main() -> Result<()> {
 
     info!("Connected to database: {:?}", &options.links_db_file);
 
-    initialize_db(&mut conn).await?;
+    initialize_db(&mut conn)?;
 
     info!("Initialized database: {:?}", &options.links_db_file);
 
@@ -97,7 +97,7 @@ async fn enter_poll_loop(
 
                 match url::Url::parse(&previous_clipboard_contents) {
                     Ok(url) => {
-                        write_link_to_db(conn, url).await.context("Could not write link to database")?;
+                        write_link_to_db(conn, url).context("Could not write link to database")?;
                     }
                     Err(_e) => {
                         continue
@@ -115,7 +115,7 @@ async fn enter_poll_loop(
 }
 
 #[tracing::instrument]
-async fn initialize_db(conn: &mut rusqlite::Connection) -> Result<()> {
+fn initialize_db(conn: &mut rusqlite::Connection) -> Result<()> {
     let tx = conn.transaction()?;
 
     tx.execute(
@@ -138,10 +138,7 @@ async fn initialize_db(conn: &mut rusqlite::Connection) -> Result<()> {
 }
 
 #[tracing::instrument]
-async fn write_link_to_db(
-    conn: &rusqlite::Connection,
-    link: url::Url,
-) -> Result<usize, rusqlite::Error> {
+fn write_link_to_db(conn: &rusqlite::Connection, link: url::Url) -> Result<usize, rusqlite::Error> {
     let link_id = conn.query_row::<usize, _, _>(
         "INSERT INTO links (link)
         VALUES (?1)
