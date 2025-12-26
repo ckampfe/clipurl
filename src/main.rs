@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use copypasta::ClipboardProvider;
 use std::path::PathBuf;
@@ -138,8 +138,8 @@ fn initialize_db(conn: &mut rusqlite::Connection) -> Result<()> {
 }
 
 #[tracing::instrument]
-fn write_link_to_db(conn: &rusqlite::Connection, link: url::Url) -> Result<usize, rusqlite::Error> {
-    let link_id = conn.query_row::<usize, _, _>(
+fn write_link_to_db(conn: &rusqlite::Connection, link: url::Url) -> Result<isize, rusqlite::Error> {
+    let link_id = conn.query_row::<isize, _, _>(
         "INSERT INTO links (link)
         VALUES (?1)
         RETURNING id",
